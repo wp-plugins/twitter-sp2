@@ -221,12 +221,12 @@ function sp2_post_on_twitter($post_id) {
 	$snoop->agent = 'Twitter SP2 http://deceblog.net/2009/04/twitter-sp2/';
 	$snoop->rawheaders = array(
 		'X-Twitter-Client' => 'Twitter SP2',
-		'X-Twitter-Client-Version' => '1.0',
+		'X-Twitter-Client-Version' => '0.1',
 		'X-Twitter-Client-URL' => 'http://deceblog.net/twitter-sp2.xml'
 	);
 	$snoop->user = $twitter_username;
 	$snoop->pass = $twitter_password;
-	$snoop->submit( 'http://twitter.com/statuses/update.json', array( 'status' => $tweet, 'source' => 'twittersp2') );
+	$snoop->submit( 'http://twitter.com/statuses/update.json', array( 'status' => $tweet, 'source' => 'Twitter SP2') );
 	if (strpos($snoop->response_code, '200')) { //if success
 		add_post_meta($post_id, 'sp2_tweet_sent', '1'); //strores a variable in a custom field
 		return true;
