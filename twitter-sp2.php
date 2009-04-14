@@ -273,7 +273,7 @@ function sp2_api_page() { ?>
 			
 			<tr valign="top">
 				<th scope="row">Parola Twitter</th>
-				<td><input type="text" name="sp2_twitter_password" id="sp2_twitter_password" value="<?php echo get_option('sp2_twitter_password'); ?>" /></td>
+				<td><input type="password" name="sp2_twitter_password" id="sp2_twitter_password" value="<?php echo get_option('sp2_twitter_password'); ?>" /></td>
 			</tr>
 			
 			<tr valign="top">
