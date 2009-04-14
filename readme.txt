@@ -15,7 +15,7 @@ When a post is published the plugin makes a shorter link for the permalink using
 = Features =
 * the shorter link is stored in a custom field
 * predefined and custom formats of text to send
-* twitter notificantion cand be turned off for individual posts
+* twitter notificantion can be turned off for individual posts
 
 
 == Installation ==
