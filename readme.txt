@@ -11,7 +11,7 @@ A Wordpress plugin that posts on Twitter a link to your post shorten via sp2.ro 
 
 Twitter SP2 is a simple WordPress plugin developed for romanian bloggers that posts on Twitter a link to your post shorten via a romanian service sp2.ro when you publish a blog post.
 
-When a post is published the plugin makes a shorter link for the permalink using sp2.ro API, stores it in a custom field called `sp2_link`, then sends it on Twitter in a way chosed in Options.
+When a post is published the plugin makes a shorter link for the permalink using sp2.ro API, stores it in a custom field called `sp2_link`, then sends it on Twitter in a way chosen in Options.
 
 = Features =
 * the shorter link is stored in a custom field
