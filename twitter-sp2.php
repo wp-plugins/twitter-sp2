@@ -4,7 +4,7 @@ Plugin Name: Twitter SP2
 Plugin URI: http://deceblog.net/2009/04/twitter-sp2/
 Description: Trimite pe Twitter postul publicat cu link scurtat prin <a href="http://sp2.ro">sp2.ro</a>. Textul trimis alaturi de link se poate configura foarte usor.
 Author: Dan Stefancu
-Version: 0.1.1
+Version: 0.2
 Author URI: http://deceblog.net/
 */
 
@@ -14,6 +14,13 @@ define('SP2_API_KEY', 'd3c8'); //sp2 api key
 
 add_option('sp2_post_on_twitter', 1); // default value for autoposting on twitter
 add_option('sp2_text_to_send', 'post_title'); // default value of the text to send on twitter
+add_option('sp2_install_date', current_time('mysql')); //we need some time variable for a later hack. 
+/*
+sp2_install_date will be compared with post date to find new posts. 
+publish_post hook runs even if the user is updating an old published post.
+there is no hook that runs only on new posts until wordpress 2.8
+*/
+
 add_action('admin_menu', 'add_sp2_api_page'); // adds the options page
 add_action('admin_menu', 'add_sp2_add_switch'); //adds an option for the post
 add_action('save_post', 'sp2_switch_save'); //stores the switch in a custom field
@@ -45,15 +52,21 @@ function sp2_javascript() { ?>
 	function sp2_title_change(){
 		var newOpt=document.getElementById("sp2_text_to_send");
 		if (newOpt.selectedIndex==3){
-			var selOp=document.getElementById("sp2_custom_text_to_send");
-			selOp.style.display = "block";
-			var selOl=document.getElementById("sp2_custom_title_label");
-			selOl.style.display = "block";
+			var sel1=document.getElementById("sp2_custom_text_to_send");
+			sel1.style.display = "block";
+			var sel2=document.getElementById("sp2_custom_title_label");
+			sel2.style.display = "block";
+			var sel3=document.getElementById("sp2_custom_tags");
+			sel3.style.display = "block";
+			
+			
 		} else {
-			var selOp=document.getElementById("sp2_custom_text_to_send");
-			selOp.style.display = "none";
-			var selOl=document.getElementById("sp2_custom_title_label");
-			selOl.style.display = "none";
+			var sel1=document.getElementById("sp2_custom_text_to_send");
+			sel1.style.display = "none";
+			var sel2=document.getElementById("sp2_custom_title_label");
+			sel2.style.display = "none";
+			var sel3=document.getElementById("sp2_custom_tags");
+			sel3.style.display = "none";
 		}
 	}
 </script>
@@ -68,7 +81,7 @@ function get_custom_excerpt($post_id, $limit = 100) {
 	$text = rtrim($text, "\s\n\t\r\0\x0B");
 	$text = str_replace(']]>', ']]&gt;', $text);
 	$text = strip_tags($text);
-	$text = substr($text, 0, $limit); //trims the content after 100 characters
+	$text = substr($text, 0, $limit); //trims the content after 100 characters or the $limit
 	$text .= "...";
 	
 	return $text;
@@ -135,25 +148,42 @@ function sp2_get_text_to_send($post_id) {
 	
 	$text_to_send = get_option('sp2_text_to_send'); //get the option
 	$custom_text_to_send = get_option('sp2_custom_text_to_send'); //get the custom text set in options if exists
+	$title = get_the_title($post_id);
 	
 	switch ($text_to_send) {
 		case 'post_title':
-			$text = get_the_title($post_id);
+			$return_text = $title . " " . $short_url;
 			break;
 		case 'post_excerpt':
-			$text = get_custom_excerpt($post_id);
+			$return_text = get_custom_excerpt($post_id) . " " . $short_url;
 			break;
 		case 'title_excerpt':
-			$text = get_the_title($post_id) . ': ';
+			$text = $title . ': ';
 			$limit = 110 - strlen($text);
 			$text .= get_custom_excerpt($post_id, $limit);
+			$return_text = $text . " " . $short_url;
 			break;
 		case 'custom':
+		
 			$text = $custom_text_to_send;
+			if (strpos($text, "%titlu%") !== FALSE)
+	  			$text = str_replace("%titlu%", $title, $text);
+	  		
+			if (strpos($text, "%link%") !== FALSE)
+	  			$text = str_replace("%link%", $short_url, $text);
+			
+			if (strpos($text, "%fragment%") !== FALSE) {
+				$limit = 145 - strlen($text); 
+				
+				$text = str_replace("%fragment%", get_custom_excerpt($post_id, $limit), $text);
+				
+			}
+	  
+			$return_text = $text;
 			break;
 	}
 	
-	$return_text = $text . " " . $short_url;
+	
 	
 	return $return_text;
 }
@@ -166,6 +196,10 @@ function add_sp2_add_switch() {
    
 function sp2_switch() { 
 	global $post;
+	if (get_option('sp2_install_date') > $post->post_date) {
+		delete_post_meta($post->ID, 'sp2_disable_updates');
+		add_post_meta($post->ID, 'sp2_disable_updates', 1);
+	}	
 	$sp2_disable_updates = get_post_custom_values('sp2_disable_updates', $post->ID);
 ?>
 	<label for="myplugin_new_field">Nu trimite acest post pe Twitter</label>
@@ -262,34 +296,41 @@ function sp2_api_page() { ?>
 		
 		<table class="form-table">
 			<tr valign="top">
-				<th scope="row">Trmite posturile noi pe Twitter?</th>
+				<th scope="row"><label for="sp2_post_on_twitter">Trimite posturile noi pe Twitter?</label></th>
 				<td><input type="checkbox" name="sp2_post_on_twitter" id="sp2_post_on_twitter" value="1" <?php if (get_option('sp2_post_on_twitter') == 1) { ?>checked="checked"<?php } ?> /></td>
 			</tr>
 			
 			<tr valign="top">
-				<th scope="row">Utilizator Twitter</th>
+				<th scope="row"><label for="sp2_twitter_username">Utilizator Twitter</label></th>
 				<td><input type="text" name="sp2_twitter_username" id="sp2_twitter_username" value="<?php echo get_option('sp2_twitter_username'); ?>" /></td>
 			</tr>
 			
 			<tr valign="top">
-				<th scope="row">Parola Twitter</th>
+				<th scope="row"><label for="sp2_twitter_password">Parola Twitter</label></th>
 				<td><input type="password" name="sp2_twitter_password" id="sp2_twitter_password" value="<?php echo get_option('sp2_twitter_password'); ?>" /></td>
+				
 			</tr>
 			
+
+			
 			<tr valign="top">
-				<th scope="row">Ce text sa fie trimis pe Twitter?</th>
+				<th scope="row"><label for="sp2_text_to_send">Ce text sa fie trimis pe Twitter?</label></th>
 				<td><select name="sp2_text_to_send" id="sp2_text_to_send" onchange="sp2_title_change()">							
 						<option <?php if (get_option('sp2_text_to_send') == 'post_title') { ?> selected="selected" <?php } ?> value="post_title">Titlul postului + link</option>
 						<option <?php if (get_option('sp2_text_to_send') == 'post_excerpt') { ?> selected="selected" <?php } ?> value="post_excerpt">Fragment din post + link</option>
 						<option <?php if (get_option('sp2_text_to_send') == 'title_excerpt') { ?> selected="selected" <?php } ?> value="title_excerpt">Titlu: fragment din post + link</option>
-						<option <?php if (get_option('sp2_text_to_send') == 'custom') { ?> selected="selected" <?php } ?> value="custom">Un text la alegere + link</option>
+						<option <?php if (get_option('sp2_text_to_send') == 'custom') { ?> selected="selected" <?php } ?> value="custom">Un text la alegere</option>
 					</select>
 				</td>
 			</tr>
 			
 			<tr valign="top">
-				<th scope="row"><span id="sp2_custom_title_label" style="display:none;">Configurare text</span></th>
-				<td><input type="text" style="display:none;" name="sp2_custom_text_to_send" id="sp2_custom_text_to_send" value="<?php echo get_option('sp2_custom_text_to_send'); ?>" /></td>
+				<th scope="row"><label for="sp2_custom_text_to_send" id="sp2_custom_title_label" <?php if (get_option('sp2_text_to_send') != 'custom') { ?> style="display:none;" <?php } ?>>Configurare text</label></th>
+				<td><input class="regular-text" type="text" <?php if (get_option('sp2_text_to_send') != 'custom') { ?> style="display:none;"<?php } ?> name="sp2_custom_text_to_send" id="sp2_custom_text_to_send" value="<?php echo get_option('sp2_custom_text_to_send'); ?>" /></td>
+			</tr>
+			
+			<tr valign="top">
+				<th></th><td><span id="sp2_custom_tags" <?php if (get_option('sp2_text_to_send') != 'custom') { ?> style="display:none;"<?php } ?>>Se pot folosi variabilele: <code>%titlu%</code>, <code>%fragment%</code> si <code>%link%</code></span></td>
 			</tr>
 			
 		</table>
