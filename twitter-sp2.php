@@ -4,11 +4,13 @@ Plugin Name: Twitter SP2
 Plugin URI: http://deceblog.net/2009/04/twitter-sp2/
 Description: Trimite pe Twitter postul publicat cu link scurtat prin <a href="http://sp2.ro">sp2.ro</a>. Textul trimis alaturi de link se poate configura foarte usor.
 Author: Dan Stefancu
-Version: 0.2
+Version: 0.3
 Author URI: http://deceblog.net/
 */
 
-require_once(ABSPATH . 'wp-includes/class-snoopy.php');
+if (!class_exists('Snoopy')) {
+	require_once(ABSPATH . 'wp-includes/class-snoopy.php');
+}
 
 define('SP2_API_KEY', 'd3c8'); //sp2 api key
 
@@ -28,7 +30,7 @@ add_action('admin_head', 'sp2_javascript'); //adds some javascript in admin head
 
 // adds the hook if option is 1 and checks for twitter password and username
 if (get_option('sp2_post_on_twitter') == 1) {
-	add_action('publish_post', 'sp2_post_on_twitter');
+	add_action('draft_to_publish', 'sp2_post_on_twitter');
 	
 	$twitter_username = get_option('sp2_twitter_username');
 	$twitter_password = get_option('sp2_twitter_password');
@@ -78,6 +80,8 @@ function sp2_javascript() { ?>
 function get_custom_excerpt($post_id, $limit = 100) {
 	$post = get_post($post_id); //gets the post based on id
 	$text = $post->post_content; // gets the contents
+	$text = strip_shortcodes($text);
+	$text = wptexturize($text);
 	$text = rtrim($text, "\s\n\t\r\0\x0B");
 	$text = str_replace(']]>', ']]&gt;', $text);
 	$text = strip_tags($text);

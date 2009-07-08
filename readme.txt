@@ -2,14 +2,14 @@
 Contributors: de-ce
 Tags: integrate, notify, digest, Post, integration, tweet, twitter, api, links 
 Requires at least: 2.6
-Tested up to: 2.7.1
-Stable tag: 0.2
+Tested up to: 2.8
+Stable tag: 0.3
 
 A Wordpress plugin that posts on Twitter a link to your post shorten via sp2.ro when you publish a blog post. 
 
 == Description ==
 
-Twitter SP2 is a simple WordPress plugin developed for romanian bloggers that posts on Twitter a link to your post shorten via a romanian service sp2.ro when you publish a blog post.
+Twitter SP2 is a simple WordPress plugin developed for bloggers who have Twitter accounts. The plugin posts on Twitter a link to your post shorten via a romanian service sp2.ro when you publish a new blog post.
 
 When a post is published the plugin makes a shorter link for the permalink using sp2.ro API, stores it in a custom field called `sp2_link`, then sends it on Twitter in a way chosen in Options.
 
@@ -19,6 +19,8 @@ When a post is published the plugin makes a shorter link for the permalink using
 * twitter notificantion can be turned off for individual posts
 
 = Changelog =
+* v0.3 - trimmed out shortcodes and bad chars from post excerpt
+* v0.3 - switched on a new 2.8 action hook
 * v0.2 - changed old posts twitter notificantion option to off by default
 * v0.2 - added `%titlu%`, `%fragment%`, and `%link%` as tags for custom texts to send
 * v0.1.1 - fixed minor input error in Options
