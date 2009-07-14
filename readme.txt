@@ -2,7 +2,7 @@
 Contributors: de-ce
 Tags: integrate, notify, digest, Post, integration, tweet, twitter, api, links 
 Requires at least: 2.6
-Tested up to: 2.8
+Tested up to: 2.8.1
 Stable tag: 0.3
 
 A Wordpress plugin that posts on Twitter a link to your post shorten via sp2.ro when you publish a blog post. 
