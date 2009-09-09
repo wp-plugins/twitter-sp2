@@ -2,8 +2,8 @@
 Contributors: de-ce
 Tags: integrate, notify, digest, Post, integration, tweet, twitter, api, links 
 Requires at least: 2.6
-Tested up to: 2.8.1
-Stable tag: 0.3
+Tested up to: 2.8.4
+Stable tag: 0.4
 
 A Wordpress plugin that posts on Twitter a link to your post shorten via sp2.ro when you publish a blog post. 
 
@@ -17,8 +17,14 @@ When a post is published the plugin makes a shorter link for the permalink using
 * the shorter link is stored in a custom field
 * predefined and custom formats of text to send
 * twitter notificantion can be turned off for individual posts
+* errors are messages stored in custom fields
+* NEW! readers can now send the posts on Twitter
+* NEW! the plugins tries for 5 time to send the text on Twitter before giving up, if Twitter gives a timeout response
 
 = Changelog =
+* v0.4 - added posibility to add a "send on twitter" link on the page to be used by the blog readers
+* v0.4 - tries for 5 times to send the text on twitter before giving up, if timeout response
+* v0.4 - added error and succes messages
 * v0.3 - trimmed out shortcodes and bad chars from post excerpt
 * v0.3 - switched on a new 2.8 action hook
 * v0.2 - changed old posts twitter notificantion option to off by default
