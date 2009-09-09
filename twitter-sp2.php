@@ -293,9 +293,9 @@ function sp2_post_on_twitter($post_id) {
 	$count = 1;
 	
 	if (strpos($snoop->response_code, '408')) { //if twitter says timeout, try again up to 4 times
-		while ($count <= 3) {
-			$snoop->submit( 'http://twitter.com/statuses/update.json', array( 'status' => $tweet, 'source' => 'Twitter SP2') );
+		while ($count <= 5) {
 			$count++;
+			$snoop->submit( 'http://twitter.com/statuses/update.json', array( 'status' => $tweet, 'source' => 'Twitter SP2') );
 		}
 	}
 	
@@ -305,11 +305,11 @@ function sp2_post_on_twitter($post_id) {
 		add_post_meta($post_id, 'sp2_tweet_sent', '1'); // stores a "sent" variable in a custom field
 		delete_post_meta($post_id, 'sp2_error');
 		add_post_meta($post_id, 'sp2_msg_not_shown', '1');
-		add_post_meta($post_id, 'sp2_times_tried', $count); // for debugging purposes only
+		// add_post_meta($post_id, 'sp2_times_tried', $count); // for debugging purposes only
 		return true;
 	}  else {
 		add_post_meta($post_id, 'sp2_error', '<strong>Twitter service error</strong>: ' . $snoop->response_code); // stores the twitter response code in a custom field sp2_error
-		add_post_meta($post_id, 'sp2_times_tried', $count); // for debugging purposes only
+		// add_post_meta($post_id, 'sp2_times_tried', $count); // for debugging purposes only
 		return false;
 	}
 	
