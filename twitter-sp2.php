@@ -4,7 +4,7 @@ Plugin Name: Twitter SP2
 Plugin URI: http://deceblog.net/2009/04/twitter-sp2/
 Description: Trimite pe Twitter postul publicat cu link scurtat prin <a href="http://sp2.ro">sp2.ro</a>. Textul trimis alaturi de link se poate configura foarte usor.
 Author: Dan-Lucian Stefancu
-Version: 0.4
+Version: 0.5
 Author URI: http://deceblog.net/
 */
 
@@ -100,69 +100,86 @@ function get_custom_excerpt($post_id, $limit = 100) {
 }
 
 function sp2_show_link($id = 0) {
-	$sp2_link = get_post_custom_values('sp2_link', $post_id);
-	if ($sp2_link)
+	$sp2_link = get_post_custom_values('sp2_link', $id);
+	if ($sp2_link) {
 		echo '<a href="http://twitter.com/?status='.urlencode(stripslashes(sp2_get_text_to_send($id))).'">Trimite pe Twitter</a>';
+		echo "am sp2?";
+	} else {
+		$link = get_the_guid($id);
+		echo $link ." ";
+		echo '<a href="http://twitter.com/?status='.urlencode(stripslashes(sp2_get_text_to_send($id, $link))).'">Trimite pe Twitter</a>';
+	}
+		
+}
+
+//returns the sp2 link or false on error
+function sp2_get_link($post_id) {
+	$url = get_permalink($post_id);
+	$snoop = new Snoopy;
+	$snoop->agent = 'Twitter SP2 http://deceblog.net/2009/04/twitter-sp2/';
+	$snoop->submit('http://sp2.ro/api/index/index', array( 'method' => 'getShort', 'key' => SP2_API_KEY, 'url' => $url ));
+	/*		
+	Returns
+	<value>link</value>
+	<code>error/success code</code>
+	<limit>remaining interrogations</limit>
+	<status>true/false</status>
+	*/
+	
+	//simplexml_load_string doesn't work under php 4
+	$response = simplexml_load_string($snoop->results); // sores the xml values in an array
+
+	/*		
+	Codes
+	200 - Invalid API key
+	201 - Invalid URL
+	202 - API limits exceeded, please contact the admins
+	666 - This is the code for a STRANGE error, please contact the admins
+	100 – success
+	*/
+	
+	if (($response->code == 100) && ($response->limit > 0)) { //if no error and limit not passed
+		$short_url = $response->value; // overrites the variable
+		add_post_meta($post_id, 'sp2_link', $short_url); //the shortened link is stored in a custom field
+		return $short_url;
+	} else {
+		switch ($response->code) {
+			case 200:
+				$sp2_error = '<strong>SP2.ro service error</strong>: Invalid API key';
+				break;
+			case 201:
+				$sp2_error = '<strong>SP2.ro service error</strong>: Invalid post URL. Maybe you\'re on localhost?';
+				break;
+			case 202:
+				$sp2_error = '<strong>SP2.ro service error</strong>: API limits exceeded, please contact the admins';
+				break;
+			case 666:
+				$sp2_error = '<strong>SP2.ro error</strong>: STRANGE error, please contact the admins';
+				break;
+			default:
+				$sp2_error = '<strong>Wordpress error</strong>: Snoopy not working, contact your blog host administrator';
+				break;
+		}
+		add_post_meta($post_id, 'sp2_error', $sp2_error);
+		return false; 
+	}
 }
 
 // returns the short link + the text to send selected in options
-function sp2_get_text_to_send($post_id) {
+function sp2_get_text_to_send($post_id, $sp2_link = FALSE) {
 	
-	$sp2_link = get_post_custom_values('sp2_link', $post_id); //checks the custom field for the link
-	
-	$short_url = $sp2_link[0]; //the variable will be used later if exists
-		
-	if ( $sp2_link == FALSE ) { // if no link found get one via sp2.ro
-		$url = get_permalink($post_id);
-
-		$snoop = new Snoopy;
-		$snoop->agent = 'Twitter SP2 http://deceblog.net/2009/04/twitter-sp2/';
-		$snoop->submit('http://sp2.ro/api/index/index', array( 'method' => 'getShort', 'key' => SP2_API_KEY, 'url' => $url ));
-		/*		
-		Returns
-		<value>link</value>
-		<code>error/success code</code>
-		<limit>remaining interrogations</limit>
-		<status>true/false</status>
-		*/
-		
-		//simplexml_load_string doesn't work under php 4
-		$response = simplexml_load_string($snoop->results); // sores the xml values in an array
-
-		/*		
-		Codes
-		200 - Invalid API key
-		201 - Invalid URL
-		202 - API limits exceeded, please contact the admins
-		666 - This is the code for a STRANGE error, please contact the admins
-		100 – success
-		*/
-		
-		if (($response->code == 100) && ($response->limit > 0)) { //if no error and limit not passed
-			$short_url = $response->value; // overrites the variable
-			add_post_meta($post_id, 'sp2_link', $short_url); //the shortened link is stored in a custom field
-		} else {
-			switch ($response->code) {
-				case 200:
-					$sp2_error = '<strong>SP2.ro service error</strong>: Invalid API key';
-					break;
-				case 201:
-					$sp2_error = '<strong>SP2.ro service error</strong>: Invalid post URL. Maybe you\'re on localhost?';
-					break;
-				case 202:
-					$sp2_error = '<strong>SP2.ro service error</strong>: API limits exceeded, please contact the admins';
-					break;
-				case 666:
-					$sp2_error = '<strong>SP2.ro error</strong>: STRANGE error, please contact the admins';
-					break;
-				default:
-					$sp2_error = '<strong>Wordpress error</strong>: Snoopy not working, contact your blog host administrator';
-					break;
-			}
-			add_post_meta($post_id, 'sp2_error', $sp2_error);
-			return false; 
+	if ($sp2_link == FALSE) {
+		$sp2_link = get_post_custom_values('sp2_link', $post_id); //checks the custom field for the link
+		$short_url = $sp2_link[0]; //the variable will be used later if exists
+		if ( $sp2_link == FALSE ) { // if no link found get one via sp2.ro
+			$short_url = sp2_get_link($post_id);
 		}
+	} else {
+		$short_url = $sp2_link;
 	}
+	
+	if ($short_url == FALSE)
+		return false;
 	
 	$text_to_send = get_option('sp2_text_to_send'); //get the option
 	$custom_text_to_send = get_option('sp2_custom_text_to_send'); //get the custom text set in options if exists
@@ -293,9 +310,9 @@ function sp2_post_on_twitter($post_id) {
 	$count = 1;
 	
 	if (strpos($snoop->response_code, '408')) { //if twitter says timeout, try again up to 4 times
-		while ($count <= 5) {
-			$count++;
+		while ($count <= 3) {
 			$snoop->submit( 'http://twitter.com/statuses/update.json', array( 'status' => $tweet, 'source' => 'Twitter SP2') );
+			$count++;
 		}
 	}
 	
@@ -305,11 +322,11 @@ function sp2_post_on_twitter($post_id) {
 		add_post_meta($post_id, 'sp2_tweet_sent', '1'); // stores a "sent" variable in a custom field
 		delete_post_meta($post_id, 'sp2_error');
 		add_post_meta($post_id, 'sp2_msg_not_shown', '1');
-		// add_post_meta($post_id, 'sp2_times_tried', $count); // for debugging purposes only
+		add_post_meta($post_id, 'sp2_times_tried', $count); // for debugging purposes only
 		return true;
 	}  else {
 		add_post_meta($post_id, 'sp2_error', '<strong>Twitter service error</strong>: ' . $snoop->response_code); // stores the twitter response code in a custom field sp2_error
-		// add_post_meta($post_id, 'sp2_times_tried', $count); // for debugging purposes only
+		add_post_meta($post_id, 'sp2_times_tried', $count); // for debugging purposes only
 		return false;
 	}
 	
