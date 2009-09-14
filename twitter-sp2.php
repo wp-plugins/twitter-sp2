@@ -4,7 +4,7 @@ Plugin Name: Twitter SP2
 Plugin URI: http://deceblog.net/2009/04/twitter-sp2/
 Description: Trimite pe Twitter postul publicat cu link scurtat prin <a href="http://sp2.ro">sp2.ro</a>. Textul trimis alaturi de link se poate configura foarte usor.
 Author: Dan-Lucian Stefancu
-Version: 0.6
+Version: 0.6.1
 Author URI: http://deceblog.net/
 */
 
@@ -103,7 +103,6 @@ function sp2_show_link($id = 0) {
 	$sp2_link = get_post_custom_values('sp2_link', $id);
 	if ($sp2_link) {
 		echo '<a href="http://twitter.com/?status='.urlencode(stripslashes(sp2_get_text_to_send($id))).'">Trimite pe Twitter</a>';
-		echo "am sp2?";
 	} else {
 		$link = get_the_guid($id);
 		echo '<a href="http://twitter.com/?status='.urlencode(stripslashes(sp2_get_text_to_send($id, $link))).'">Trimite pe Twitter</a>';
